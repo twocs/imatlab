@@ -89,7 +89,11 @@ MATLAB debugger
 ---------------
 
 The MATLAB debugger is cleared (``dbclear all``) before each execution, as
-interactive input is not supported by the engine API.
+interactive input is not supported by the engine API. As the engine does not
+support the Editor/Debugger, Mathworks recommends saving the engine workspace
+using save(<workspace_filename>) and then opening the project in the Editor/
+Debugger. Note that the notebook may be saved as a .m file using
+File > Download as >  Matlab (.m)
 
 Differences with the Calysto MATLAB Kernel
 ------------------------------------------
