@@ -2,6 +2,7 @@ from contextlib import ExitStack
 from io import StringIO
 import json
 import os
+from pkg_resources import resource_string # for plotly
 from pathlib import Path
 import re
 import sys
@@ -15,7 +16,6 @@ from ipykernel.kernelbase import Kernel
 import IPython
 
 ipython_display = optional_imports.get_module('IPython.display')
-# import plotly  # Must come before matlab.engine due to LD_PRELOAD tricks.
 import matlab.engine
 from matlab.engine import EngineError, MatlabExecutionError
 
@@ -349,71 +349,18 @@ class MatlabKernel(Kernel):
         if restart:
             self._engine = matlab.engine.start_matlab()
 
-            
-            
-#TODO: Add the MIT license for these two methods https://github.com/plotly/plotly.py/blob/master/LICENSE.txt
-    def init_notebook_mode(connected=False):
-        """
-        Initialize plotly.js in the browser if it hasn't been loaded into the DOM
-        yet. This is an idempotent method and can and should be called from any
-        offline methods that require plotly.js to be loaded into the notebook dom.
-        Keyword arguments:
-        connected (default=False) -- If True, the plotly.js library will be loaded
-        from an online CDN. If False, the plotly.js library will be loaded locally
-        from the plotly python package
-        Use `connected=True` if you want your notebooks to have smaller file sizes.
-        In the case where `connected=False`, the entirety of the plotly.js library
-        will be loaded into the notebook, which will result in a file-size increase
-        of a couple megabytes. Additionally, because the library will be downloaded
-        from the web, you and your viewers must be connected to the internet to be
-        able to view charts within this notebook.
-        Use `connected=False` if you want you and your collaborators to be able to
-        create and view these charts regardless of the availability of an internet
-        connection. This is the default option since it is the most predictable.
-        Note that under this setting the library will be included inline inside
-        your notebook, resulting in much larger notebook sizes compared to the case
-        where `connected=True`.
-        """
-        if not ipython:
-            raise ImportError('`iplot` can only run inside an IPython Notebook.')
+    def init_notebook_mode():
+        # Initialize plotly.js in the browser if it hasn't been loaded into the DOM
+        # yet. This is an idempotent method and can and should be called from any
+        # offline methods that require plotly.js to be loaded into the notebook dom.
+        # Note that this method is a portion of an original method that us under the 
+        # MIT license, https://github.com/plotly/plotly.py/blob/master/LICENSE.txt
 
-        global __PLOTLY_OFFLINE_INITIALIZED
+        # Inject plotly.js into the output cell
+        script_inject = (
+            "<script type='text/javascript'>if(!window.Plotly){{define('plotly',function(require,exports,module){{{script}}});require(['plotly'],function(Plotly){{window.Plotly=Plotly;}});}}</script>")
+            .format(script=resource_string('plotly', os.path.join('package_data', 'plotly.min.js')) 
+            .decode('utf-8'))
 
-        if connected:
-            # Inject plotly.js into the output cell
-            script_inject = (
-                ''
-                '<script>'
-                'requirejs.config({'
-                'paths: { '
-                # Note we omit the extension .js because require will include it.
-                '\'plotly\': [\'https://cdn.plot.ly/plotly-latest.min\']},'
-                '});'
-                'if(!window.Plotly) {{'
-                'require([\'plotly\'],'
-                'function(plotly) {window.Plotly=plotly;});'
-                '}}'
-                '</script>'
-            )
-        else:
-            # Inject plotly.js into the output cell
-            script_inject = (
-                ''
-                '<script type=\'text/javascript\'>'
-                'if(!window.Plotly){{'
-                'define(\'plotly\', function(require, exports, module) {{'
-                '{script}'
-                '}});'
-                'require([\'plotly\'], function(Plotly) {{'
-                'window.Plotly = Plotly;'
-                '}});'
-                '}}'
-                '</script>'
-                '').format(script=resource_string('plotly', os.path.join('package_data', 'plotly.min.js')).decode('utf-8'))
-
-        display_bundle = {
-            'text/html': script_inject,
-            'text/vnd.plotly.v1+html': script_inject
-        }
+        display_bundle = {'text/html': script_inject, 'text/vnd.plotly.v1+html': script_inject}
         ipython_display.display(display_bundle, raw=True)
-#        __PLOTLY_OFFLINE_INITIALIZED = True
