@@ -13,7 +13,7 @@ from xml.etree import ElementTree as ET
 import ipykernel.jsonutil, ipykernel.kernelspec
 from ipykernel.kernelbase import Kernel
 import IPython
-import plotly  # Must come before matlab.engine due to LD_PRELOAD tricks.
+from plotly.offline import init_notebook_mode  # Must come before matlab.engine due to LD_PRELOAD tricks.
 import matlab.engine
 from matlab.engine import EngineError, MatlabExecutionError
 
